@@ -4,21 +4,23 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 )
 
 const (
-	workDuration  = 25 * time.Minute
-	breakDuration = 5 * time.Minute
+	defaultWorkDuration = 25
+	breakDuration       = 5 * time.Minute
 )
 
-func startPomodoro() {
+func startPomodoro(workMinutes int) {
+	workDuration := time.Duration(workMinutes) * time.Minute
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
 	for {
-		fmt.Printf("start %d min", workDuration/time.Minute)
-		notify("gomode", "start 25 min")
+		fmt.Printf("作業開始（%d分）\n", workMinutes)
+		notify("GoModo", fmt.Sprintf("作業開始！%d分集中しよう！", workMinutes))
 
 		select {
 		case <-time.After(workDuration):
@@ -43,14 +45,24 @@ func startPomodoro() {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("使い方: pomodoro start")
+		fmt.Println("使い方: gomodo start [分数]")
+		fmt.Println("例: gomodo start 20")
 		return
 	}
 
 	switch os.Args[1] {
 	case "start":
-		startPomodoro()
+		workMinutes := defaultWorkDuration
+		if len(os.Args) >= 3 {
+			if minutes, err := strconv.Atoi(os.Args[2]); err == nil && minutes > 0 {
+				workMinutes = minutes
+			} else {
+				fmt.Printf("無効な分数です。デフォルトの%d分を使用します。\n", defaultWorkDuration)
+			}
+		}
+		startPomodoro(workMinutes)
 	default:
 		fmt.Println("未知のコマンド:", os.Args[1])
+		fmt.Println("使い方: gomodo start [分数]")
 	}
 }
